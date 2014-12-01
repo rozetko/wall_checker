@@ -1,5 +1,5 @@
 # coding: utf-8
-import sys, os, logging
+import sys, os, logging, json
 
 from api import Api
 from time import sleep, time
@@ -16,7 +16,30 @@ ERROR_DELAY = 5
 
 ACTUAL_TIME = 60 * 60 # 1st number - minutes
 
-RECENT_POSTS = ConfigParser()
+class RecentPosts(object):
+        def __init__(self):
+                self.filename = 'recent_posts.json'
+                self.update()
+
+        def update(self):
+                try:
+                        with open(self.filename, 'r') as f:
+                                self.posts = json.load(f)
+                except (ValueError, IOError):
+                        with open(self.filename, 'w') as f: # Create file
+                                f.write('{}')
+
+        def set(self, gid, time):
+                self.posts[gid] = time
+                with open(self.filename, 'w') as f:
+                        json.dump(self.posts, f, indent = 4)
+
+        def get(self, gid):
+                try:
+                        return self.posts[gid]
+                except KeyError:
+                        return 0
+                
 
 def main():
         if os.name == WINDOWS:
@@ -52,7 +75,7 @@ def main():
         api = Api(login = login, password = password)
         
         while 1:
-                RECENT_POSTS.read('recent_posts') # Updating ConfigParser instance
+                RECENT_POSTS.update()
                 try:
                         groupsList = api.getGroupsList()                
                         groupsAmount = len(groupsList)
@@ -67,7 +90,7 @@ def main():
                                 recentPosts = getRecentPosts(gid, postsList)
 
                                 if recentPosts:
-                                        log.info('%d new posts\n' %(len(recentPosts)))
+                                        log.info('%d new posts' %(len(recentPosts)))
                                 
                                 for post in recentPosts:
                                         api.sendMessage(attachment = post)
@@ -97,22 +120,21 @@ def getRecentPosts(gid, postsList):
                 else:
                         break
                         
-        updateRecentPostTime(gid, postsList[0]['date'])
+        RECENT_POSTS.set(gid, postsList[0]['date'])
                 
         return recentPosts
         
 def getLastPostTime(gid):
-        if RECENT_POSTS.has_option('groups', gid):
-                return RECENT_POSTS.getint('groups', gid)
+        if RECENT_POSTS.get(gid):
+                return int(RECENT_POSTS[gid])
         
-        updateRecentPostTime(gid, int(time() - ACTUAL_TIME))
+        RECENT_POSTS.set(gid, int(time() - ACTUAL_TIME))
 
         return int(time() - ACTUAL_TIME)
-                        
-def updateRecentPostTime(gid, lastPostTime):
-        RECENT_POSTS.set('groups', gid, lastPostTime)
-        with open('recent_posts', 'w') as f:
-                RECENT_POSTS.write(f)
+
 
 if __name__ == '__main__':
+        global RECENT_POSTS
+        RECENT_POSTS = RecentPosts()
+
         main()

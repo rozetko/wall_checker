@@ -2,6 +2,7 @@
 import json, sys, logging
 
 from cookielib import CookieJar
+from urlparse import urljoin
 from urllib import urlencode
 from urllib2 import *
 from re import findall
@@ -61,7 +62,8 @@ class Api(object):
 		
 		try: # Redirected to get permissions
 			url = findall('method="post" action="([^"]+)"', resp.read())[0]
-			
+			url = urljoin('https://vk.com', url)
+
 			redirectUrl = urlopen(url, urlencode({'submit': 'Allow'})).geturl()
 			
 		except IndexError: #  Already got permissions
