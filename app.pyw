@@ -39,23 +39,9 @@ class RecentPosts(object):
                         return self.posts[gid]
                 except KeyError:
                         return 0
-                
 
-def main():
-        if os.name == WINDOWS:
-                gui = Gui()
-                login = gui.result[0]
-                password = gui.result[1]
-        else:
-                parser = OptionParser(usage = 'usage: %prog login password')
-                
-                (options, args) = parser.parse_args()
-
-                if len(args) != 2:
-                        parser.error("wrong number of arguments")
-
-                login = args[0]
-                password = args[1]
+def setupLogger():
+        global log
 
         log = logging.getLogger('wallChecker')
         log.setLevel(logging.DEBUG)
@@ -71,7 +57,18 @@ def main():
 
         log.addHandler(fileHandler)
         log.addHandler(streamHandler)
-        
+                
+
+def main():
+        setupLogger()
+
+        try:
+                login = config['login']
+                password = config['password']
+        except ValueError:
+                log.critical('No login/password in config file')
+                sys.exit('No login/password in config file')
+
         api = Api(login = login, password = password)
         
         while 1:
@@ -126,7 +123,7 @@ def getRecentPosts(gid, postsList):
         
 def getLastPostTime(gid):
         if RECENT_POSTS.get(gid):
-                return int(RECENT_POSTS[gid])
+                return int(RECENT_POSTS.get(gid))
         
         RECENT_POSTS.set(gid, int(time() - ACTUAL_TIME))
 
@@ -136,5 +133,16 @@ def getLastPostTime(gid):
 if __name__ == '__main__':
         global RECENT_POSTS
         RECENT_POSTS = RecentPosts()
+
+        try:
+                with open('config.json', 'r') as f:
+                        config = json.load(f)
+        except IOError:
+                with open('config.json', 'w') as f:
+                        json.dump({
+                                'login': '',
+                                'password': ''
+                        }, f, indent = 4)
+                sys.exit('No config file')
 
         main()

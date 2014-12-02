@@ -26,6 +26,7 @@ class Gui(object):
 		self.password = Tk.Text(height=1, width=18)
 		self.password.place(x = 50, y = 150)
 		self.password.bind('<Return>', self.send)
+		self.password.config(show = '*')
 
 		self.OK = Tk.Button(self.window, text = 'Log in')
 		self.OK.place(x = 100, y = 200)
