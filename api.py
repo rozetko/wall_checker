@@ -122,7 +122,7 @@ class Api(object):
 				log.error('Unknown error')
 				log.error('Error code: %d' %(errorCode))
 				log.error('Error message: %s' %(errorMessage))
-				sys.exit(errorCode)
+				raise Exception('Error %d: %s' %(errorCode, errorMessage))
 		
 		return json.loads(resp)['response']
 		
