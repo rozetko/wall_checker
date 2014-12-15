@@ -7,6 +7,8 @@ from urllib import urlencode
 from urllib2 import *
 from re import findall
 
+ERROR_DELAY = 5
+
 APP_ID = '4152748'
 SCOPE = 'messages'
 
@@ -78,51 +80,53 @@ class Api(object):
 	
 	def callMethod(self, methodName, params = {}):	
 		while 1:
-			if methodName != 'check':
-				log.info('Calling method %s' %(methodName))
-			else:
-				log.info('Checking token')
-			
-			resp = urlopen('https://api.vk.com/method/%s?%s&access_token=%s' 
-							%(methodName, urlencode(params.items()), self.token)).read()
-			
-			error = self.checkError(resp)
-			errorCode = error[0]
-			errorMessage = error[1]
-			
-			if errorCode == NO_ERROR:
-				break
-				
-			elif errorCode == INVALID_TOKEN_ERROR:
+			try:
 				if methodName != 'check':
-					log.warn('Invalid token. Trying to get new')
-					self.getToken()
+					log.info('Calling method %s' %(methodName))
 				else:
-					return 0
-					
-				continue
+					log.info('Checking token')
 				
-			elif errorCode == INVALID_METHOD_ERROR:
-				if methodName != 'check':
-					log.error('Invalid method called')
-					sys.exit(INVALID_METHOD_ERROR)
+				resp = urlopen('https://api.vk.com/method/%s?%s&access_token=%s' 
+								%(methodName, urlencode(params.items()), self.token)).read()
+				
+				error = self.checkError(resp)
+				errorCode = error[0]
+				errorMessage = error[1]
+				
+				if errorCode == NO_ERROR:
+					break
+					
+				elif errorCode == INVALID_TOKEN_ERROR:
+					if methodName != 'check':
+						log.warn('Invalid token. Trying to get new')
+						self.getToken()
+					else:
+						return 0
+						
+					continue
+					
+				elif errorCode == INVALID_METHOD_ERROR:
+					if methodName != 'check':
+						log.error('Invalid method called')
+						sys.exit(INVALID_METHOD_ERROR)
+					else:
+						log.info('Token is valid')
+						
+					return 1
+					
+				elif errorCode == PERMISSIONS_ERROR:
+					log.error('Not enough permissions')
+					sys.exit(PERMISSIONS_ERROR)
+					
+				elif errorCode == GROUP_BLOCKED_ERROR:
+					return GROUP_BLOCKED_ERROR
+				
 				else:
-					log.info('Token is valid')
-					
-				return 1
-				
-			elif errorCode == PERMISSIONS_ERROR:
-				log.error('Not enough permissions')
-				sys.exit(PERMISSIONS_ERROR)
-				
-			elif errorCode == GROUP_BLOCKED_ERROR:
-				return GROUP_BLOCKED_ERROR
-			
-			else:
-				log.error('Unknown error')
-				log.error('Error code: %d' %(errorCode))
-				log.error('Error message: %s' %(errorMessage))
-				raise Exception('Error %d: %s' %(errorCode, errorMessage))
+					raise Exception('Error %d: %s' %(errorCode, errorMessage))
+			except Exception, err:  
+				log.error(err)
+
+                sleep(ERROR_DELAY)
 		
 		return json.loads(resp)['response']
 		
