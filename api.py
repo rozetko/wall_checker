@@ -6,6 +6,7 @@ from urlparse import urljoin
 from urllib import urlencode
 from urllib2 import *
 from re import findall
+from time import sleep
 
 ERROR_DELAY = 5
 
