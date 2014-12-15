@@ -124,7 +124,7 @@ class Api(object):
 				else:
 					raise Exception('Error %d: %s' %(errorCode, errorMessage))
 			except Exception, err:  
-				log.error(err)
+				log.error(str(err))
 
                 sleep(ERROR_DELAY)
 		

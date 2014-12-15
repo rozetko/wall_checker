@@ -97,7 +97,7 @@ def main():
                 except KeyboardInterrupt:
                         sys.exit()
                 except Exception, err:
-                        log.error(err)
+                        log.error(str(err))
                         
                         sleep(ERROR_DELAY)
    
